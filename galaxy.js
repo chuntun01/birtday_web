@@ -35,12 +35,27 @@ function lockLandscape() {
     window.screen.orientation &&
     window.screen.orientation.lock
   ) {
-    window.screen.orientation.lock("landscape").catch((err) => {
-      console.warn("Could not lock orientation:", err);
-    });
+    window.screen.orientation
+      .lock("landscape")
+      .then(() => console.log("Screen locked to landscape"))
+      .catch((err) => {
+        console.warn("Could not lock orientation:", err);
+        // Fallback: Hiển thị thông báo cho người dùng nếu không khóa được
+        alert(
+          "Please rotate your device to landscape mode for the best experience."
+        );
+      });
+  } else {
+    console.warn(
+      "Screen Orientation API not supported. Please rotate manually."
+    );
+    alert(
+      "Please rotate your device to landscape mode for the best experience."
+    );
   }
 }
 
+// Phát hiện thiết bị di động và yêu cầu xoay ngang
 if (
   /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent
@@ -52,6 +67,10 @@ if (
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+      // Kiểm tra lại và yêu cầu xoay nếu không phải landscape
+      if (window.orientation !== 90 && window.orientation !== -90) {
+        lockLandscape();
+      }
     }, 100);
   });
 }
@@ -112,7 +131,7 @@ function getRandomColor() {
   for (let i = 0; i < 6; i++) {
     color += letters[Math.floor(Math.random() * 16)];
   }
-  return parseInt(color.replace("#", "0x"), 16); // Chuyển sang định dạng hex cho Three.js
+  return parseInt(color.replace("#", "0x"), 16);
 }
 
 fontLoader.load(
@@ -138,12 +157,7 @@ fontLoader.load(
     });
     scene.add(textGroup);
 
-    const newTexts = [
-      "Trung Phan",
-      "Eternal Love",
-      "ôi Cụ Tuấn Đẹp trai vãi loằn",
-      "Cụ Tuấn Làm đấy",
-    ];
+    const newTexts = ["Forever Yours", "Eternal Love"];
     newTexts.forEach((text, index) => {
       const textGeometry = new TextGeometry(text, {
         font: font,
@@ -211,10 +225,10 @@ fontLoader.load(
 
 const floatingImageFrames = [];
 const floatingImages = window.dataLove.floatingImages || [];
-const DUPLICATES_PER_IMAGE = 65;
+const DUPLICATES_PER_IMAGE = 30;
 const IMAGE_SIZE = 1.5;
 const BORDER_THICKNESS = 0.05;
-const RADIUS_RANGE = 16;
+const RADIUS_RANGE = 12;
 
 // Hàm tạo texture bo tròn góc từ một ảnh gốc
 function createRoundedTexture(originalTexture, radius = 0.2) {
@@ -389,7 +403,7 @@ floatingImages.forEach((imagePath) => {
         imageMesh.position.z = 0.001;
 
         const angle = Math.random() * Math.PI * 2;
-        const currentRadius = 7 + Math.random() * RADIUS_RANGE * 1.5; // Tăng từ 3 lên 5 để ảnh xa hơn
+        const currentRadius = 5 + Math.random() * RADIUS_RANGE * 1.5;
         frameGroup.position.x = Math.cos(angle) * currentRadius;
         frameGroup.position.z = Math.sin(angle) * currentRadius;
         frameGroup.position.y = (Math.random() - 0.5) * RADIUS_RANGE * 1.2;
