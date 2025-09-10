@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dear My Love</title>
+    <link rel="icon" type="image/png" href="./assets/heart.png" />
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.152.2/build/three.module.js",
+          "three/addons/controls/OrbitControls.js": "https://unpkg.com/three@0.152.2/examples/jsm/controls/OrbitControls.js",
+          "three/examples/jsm/loaders/FontLoader.js": "https://unpkg.com/three@0.152.2/examples/jsm/loaders/FontLoader.js",
+          "three/examples/jsm/geometries/TextGeometry.js": "https://unpkg.com/three@0.152.2/examples/jsm/geometries/TextGeometry.js"
+        }
+      }
+    </script>
+  </head>
+  <body class="galaxy-page">
+    <div id="container">
+      <div id="info-overlay">
+        <h1>THIS IS HOW I LOVE YOU</h1>
+        <p>You are my everything</p>
+      </div>
+      <button id="toggle-audio" class="btn-audio-toggle">
+        <i id="audio-icon" class="fa-solid fa-volume-xmark"></i>
+      </button>
+    </div>
+    <audio id="background-music" loop src="./assets/music.mp3"></audio>
+
+    <script>
+      window.dataLove = {
+        ringTexts: ["I Love You", "My Darling", "Forever Yours"],
+        floatingImages: [
+          "./assets/img1.jpg",
+          "./assets/img2.jpg",
+          "./assets/img3.jpg",
+          "./assets/img4.jpg",
+          "./assets/img5.jpg",
+          "./assets/img6.jpg",
+        ],
+      };
+    </script>
+    <script src="./script.js"></script>
+    <script type="module" src="./galaxy.js"></script>
+  </body>
+</html>

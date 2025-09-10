@@ -1,0 +1,183 @@
+/* =================================================== */
+/* STYLES FOR LOGIN PAGE (Sử dụng class="login-page") */
+/* =================================================== */
+
+body.login-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  font-family: "Be Vietnam Pro", sans-serif;
+  background-color: #f0f2f5;
+  color: #4b4b4b;
+}
+
+.login-container {
+  text-align: center;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.lock-screen {
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  padding: 40px;
+  border-radius: 25px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  gap: 40px;
+}
+
+.avatar-section {
+  flex-shrink: 0;
+}
+
+.avatar {
+  width: 150px;
+  height: 150px;
+  border-radius: 20px;
+  object-fit: cover;
+}
+
+.keypad-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.password-display {
+  height: 40px;
+  width: 200px;
+  background-color: #f1f1f1;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  letter-spacing: 0.5em;
+  font-size: 30px;
+  color: #555;
+  padding: 0 10px;
+  box-sizing: border-box;
+  transition: transform 0.1s;
+}
+
+.password-display.shake {
+  animation: shake 0.5s;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-5px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.key {
+  width: 60px;
+  height: 60px;
+  border: none;
+  border-radius: 15px;
+  background-color: #f9f9f9;
+  font-size: 22px;
+  font-weight: bold;
+  color: #555;
+  cursor: pointer;
+  transition: background-color 0.2s, box-shadow 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.key:hover {
+  background-color: #e9e9e9;
+}
+.key:active {
+  background-color: #dcdcdc;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.key.action {
+  background-color: #f1f1f1;
+  font-size: 28px;
+}
+
+/* ======================================================= */
+/* STYLES FOR GALAXY PAGE (Sử dụng class="galaxy-page") */
+/* ======================================================= */
+
+body.galaxy-page {
+  margin: 0;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  background-color: #000;
+}
+
+#container {
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Nút bật/tắt âm thanh */
+.btn-audio-toggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 999;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid white;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+/* --- PHẦN CẢNH BÁO XOAY MÀN HÌNH ĐÃ ĐƯỢC XÓA BỎ --- */
+
+/* Lớp phủ tiêu đề */
+#info-overlay {
+  position: absolute;
+  top: 15px;
+  left: 20px;
+  z-index: 100;
+  color: white;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+
+#info-overlay h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+#info-overlay p {
+  margin: 5px 0 0;
+  font-size: 14px;
+  opacity: 0.8;
+}
