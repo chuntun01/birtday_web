@@ -1,52 +1,96 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dear My Love</title>
-    <link rel="icon" type="image/png" href="./assets/heart.png" />
+    <title>Nhập Pass Đi Người Đẹp</title>
     <link rel="stylesheet" href="style.css" />
     <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;700&display=swap"
       rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://unpkg.com/three@0.152.2/build/three.module.js",
-          "three/addons/controls/OrbitControls.js": "https://unpkg.com/three@0.152.2/examples/jsm/controls/OrbitControls.js",
-          "three/examples/jsm/loaders/FontLoader.js": "https://unpkg.com/three@0.152.2/examples/jsm/loaders/FontLoader.js",
-          "three/examples/jsm/geometries/TextGeometry.js": "https://unpkg.com/three@0.152.2/examples/jsm/geometries/TextGeometry.js"
+  </head>
+  <body class="login-page">
+    <div class="login-container">
+      <h1 class="title">NHẬP PASS ĐI NGƯỜI ĐẸP</h1>
+      <div class="lock-screen">
+        <div class="avatar-section">
+          <img src="./assets/Avatar.jpg" alt="Avatar" class="avatar" />
+        </div>
+        <div class="keypad-section">
+          <div id="password-display" class="password-display"></div>
+          <div class="keypad">
+            <button class="key">1</button>
+            <button class="key">2</button>
+            <button class="key">3</button>
+            <button class="key">4</button>
+            <button class="key">5</button>
+            <button class="key">6</button>
+            <button class="key">7</button>
+            <button class="key">8</button>
+            <button class="key">9</button>
+            <button class="key action" id="submit">✓</button>
+            <button class="key">0</button>
+            <button class="key action" id="clear">×</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const passwordDisplay = document.getElementById("password-display");
+      const keys = document.querySelectorAll(".key");
+      const clearBtn = document.getElementById("clear");
+      const submitBtn = document.getElementById("submit");
+
+      // Đặt mật khẩu đúng ở đây
+      const CORRECT_PASSWORD = "123456";
+
+      let enteredPassword = "";
+
+      keys.forEach((key) => {
+        key.addEventListener("click", () => {
+          const keyValue = key.textContent;
+          if (!isNaN(parseInt(keyValue))) {
+            // Chỉ thêm số
+            if (enteredPassword.length < 6) {
+              enteredPassword += keyValue;
+              updateDisplay();
+            }
+          }
+        });
+      });
+
+      clearBtn.addEventListener("click", () => {
+        if (enteredPassword.length > 0) {
+          enteredPassword = enteredPassword.slice(0, -1);
+          updateDisplay();
+        }
+      });
+
+      submitBtn.addEventListener("click", () => {
+        if (enteredPassword === CORRECT_PASSWORD) {
+          // Chuyển hướng đến trang success.html khi mật khẩu đúng
+          window.location.href = "happy birtday.html";
+        } else {
+          // Rung màn hình và xóa mật khẩu khi sai
+          passwordDisplay.classList.add("shake");
+          enteredPassword = "";
+          setTimeout(() => {
+            passwordDisplay.classList.remove("shake");
+            updateDisplay();
+          }, 500);
+        }
+      });
+
+      function updateDisplay() {
+        passwordDisplay.innerHTML = ""; // Xóa các dấu chấm cũ
+        for (let i = 0; i < enteredPassword.length; i++) {
+          const dot = document.createElement("span");
+          dot.textContent = "•";
+          passwordDisplay.appendChild(dot);
         }
       }
     </script>
-  </head>
-  <body class="galaxy-page">
-    <div id="container">
-      <div id="info-overlay">
-        <h1>THIS IS HOW I LOVE YOU</h1>
-        <p>You are my everything</p>
-      </div>
-      <button id="toggle-audio" class="btn-audio-toggle">
-        <i id="audio-icon" class="fa-solid fa-volume-xmark"></i>
-      </button>
-    </div>
-    <audio id="background-music" loop src="./assets/music.mp3"></audio>
-
-    <script>
-      window.dataLove = {
-        ringTexts: ["I Love You", "My Darling", "Forever Yours"],
-        floatingImages: [
-          "./assets/img1.jpg",
-          "./assets/img2.jpg",
-          "./assets/img3.jpg",
-          "./assets/img4.jpg",
-          "./assets/img5.jpg",
-          "./assets/img6.jpg",
-        ],
-      };
-    </script>
-    <script src="./script.js"></script>
-    <script type="module" src="./galaxy.js"></script>
   </body>
 </html>

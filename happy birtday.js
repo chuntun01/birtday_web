@@ -253,7 +253,7 @@ c.addEventListener("click", function (e) {
     mouseY < boxBottom
   ) {
     // Thay 'gift.html' bằng trang bạn muốn chuyển đến
-    window.location.href = "./index.html";
+    window.location.href = "./lastStep.html";
   }
 });
 
