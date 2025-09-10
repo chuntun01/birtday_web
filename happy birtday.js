@@ -1,554 +1,357 @@
-let c = document.getElementById("c");
-if (!c) {
-  c = document.createElement("canvas");
-  c.id = "c";
-  document.body.appendChild(c);
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
+import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
+
+// 1. KHỞI TẠO CÁC THÀNH PHẦN CƠ BẢN
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(
+  75,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  1000
+);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+const container = document.getElementById("container");
+
+if (!container) {
+  console.error("Container element with id 'container' not found! Please add <div id='container'></div> to your HTML.");
+} else {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  container.appendChild(renderer.domElement);
 }
 
-let w = (c.width = window.innerWidth),
-  h = (c.height = window.innerHeight),
-  ctx = c.getContext("2d"),
-  hw = w / 2,
-  hh = h / 2,
-  opts = {
-    strings: ["HAPPY", "BIRTHDAY!", "to You"],
-    charSize: 70,
-    charSpacing: 65,
-    lineHeight: 80,
-    cx: w / 2,
-    cy: h / 2,
-    fireworkPrevPoints: 10,
-    fireworkBaseLineWidth: 5,
-    fireworkAddedLineWidth: 8,
-    fireworkSpawnTime: 200,
-    fireworkBaseReachTime: 30,
-    fireworkAddedReachTime: 30,
-    fireworkCircleBaseSize: 20,
-    fireworkCircleAddedSize: 10,
-    fireworkCircleBaseTime: 30,
-    fireworkCircleAddedTime: 30,
-    fireworkCircleFadeBaseTime: 10,
-    fireworkCircleFadeAddedTime: 5,
-    fireworkBaseShards: 5,
-    fireworkAddedShards: 5,
-    fireworkShardPrevPoints: 3,
-    fireworkShardBaseVel: 4,
-    fireworkShardAddedVel: 2,
-    fireworkShardBaseSize: 3,
-    fireworkShardAddedSize: 3,
-    gravity: 0.1,
-    upFlow: -0.1,
-    letterContemplatingWaitTime: 360,
-    balloonSpawnTime: 20,
-    balloonBaseInflateTime: 10,
-    balloonAddedInflateTime: 10,
-    balloonBaseSize: 20,
-    balloonAddedSize: 20,
-    balloonBaseVel: 0.4,
-    balloonAddedVel: 0.4,
-    balloonBaseRadian: -(Math.PI / 2 - 0.5),
-    balloonAddedRadian: -1,
-  },
-  calc = {
-    totalWidth:
-      opts.charSpacing *
-      Math.max(opts.strings[0].length, opts.strings[1].length),
-  },
-  Tau = Math.PI * 2,
-  TauQuarter = Tau / 4,
-  letters = [];
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.minDistance = 5;
+controls.maxDistance = 50;
 
-ctx.font = opts.charSize + "px Verdana";
-
-// ======================================================
-// START: PHẦN MÃ MỚI CHO HỘP QUÀ (ĐÃ NÂNG CẤP)
-// ======================================================
-
-const giftBox = {
-  x: hw,
-  y: -200, // Bắt đầu ở trên màn hình
-  size: 160, // Kích thước to gấp đôi
-  rotation: 0,
-  speedY: 3,
-  pulse: 0,
-  shimmer: 0,
-  visible: false,
-  landed: false,
-  targetY: h - 180, // Rơi xuống vị trí thấp hơn, ngay trên chữ
-};
-
-const giftText = {
-  message: "Quà cho người đẹp nè",
-  alpha: 0,
-  visible: false,
-};
-
-// Kích hoạt hộp quà sau 2 giây
-setTimeout(() => {
-  giftBox.visible = true;
-  giftText.visible = true;
-}, 2000);
-
-function updateAndDrawGift() {
-  if (!giftBox.visible) return;
-
-  // Cập nhật vị trí hộp quà
-  if (giftBox.y < giftBox.targetY) {
-    giftBox.y += giftBox.speedY;
+// Tự động xoay ngang trên thiết bị di động
+function lockLandscape() {
+  if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+    window.screen.orientation.lock('landscape')
+      .then(() => console.log("Screen locked to landscape"))
+      .catch((err) => {
+        console.warn('Could not lock orientation:', err);
+        // Fallback: Hiển thị thông báo cho người dùng nếu không khóa được
+        alert("Please rotate your device to landscape mode for the best experience.");
+      });
   } else {
-    giftBox.y = giftBox.targetY; // Chốt vị trí để không bị trôi
-    giftBox.landed = true;
+    console.warn("Screen Orientation API not supported. Please rotate manually.");
+    alert("Please rotate your device to landscape mode for the best experience.");
   }
-
-  // Cập nhật hiệu ứng phập phồng và lấp lánh khi đã hạ cánh
-  if (giftBox.landed) {
-    giftBox.pulse += 0.05;
-    giftBox.shimmer += 0.08;
-  }
-
-  // Cập nhật độ trong suốt của chữ
-  if (giftText.visible && giftText.alpha < 1) {
-    giftText.alpha += 0.02;
-  }
-
-  // Vẽ hộp quà
-  drawGift();
-
-  // Vẽ chữ
-  drawGiftText();
 }
 
-function drawGift() {
+// Phát hiện thiết bị di động và yêu cầu xoay ngang
+if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+  lockLandscape();
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      // Kiểm tra lại và yêu cầu xoay nếu không phải landscape
+      if (window.orientation !== 90 && window.orientation !== -90) {
+        lockLandscape();
+      }
+    }, 100);
+  });
+}
+
+// 2. THÊM CÁC ĐỐI TƯỢNG VÀO SCENE
+const textureLoader = new THREE.TextureLoader();
+scene.background = textureLoader.load("./assets/background.jpg", undefined, (error) => {
+  console.error("Failed to load background texture:", error);
+});
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+scene.add(ambientLight);
+const pointLight = new THREE.PointLight(0xffffff, 1);
+pointLight.position.set(5, 10, 5);
+scene.add(pointLight);
+
+const planetTexture = textureLoader.load("./assets/OIP.webp", undefined, (error) => {
+  console.error("Failed to load planet texture:", error);
+});
+const planetGeometry = new THREE.SphereGeometry(2, 32, 32);
+const planetMaterial = new THREE.MeshStandardMaterial({ map: planetTexture });
+const planet = new THREE.Mesh(planetGeometry, planetMaterial);
+scene.add(planet);
+
+const starVertices = [];
+for (let i = 0; i < 10000; i++) {
+  const x = (Math.random() - 0.5) * 200;
+  const y = (Math.random() - 0.5) * 200;
+  const z = (Math.random() - 0.5) * 200;
+  starVertices.push(x, y, z);
+}
+const starGeometry = new THREE.BufferGeometry();
+starGeometry.setAttribute(
+  "position",
+  new THREE.Float32BufferAttribute(starVertices, 3)
+);
+const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.1 });
+const stars = new THREE.Points(starGeometry, starMaterial);
+scene.add(stars);
+
+const ringTexts = window.dataLove.ringTexts || ["I Love You"];
+const fontLoader = new FontLoader();
+const textGroup = new THREE.Group();
+const additionalTextGroup = new THREE.Group();
+
+// Hàm tạo màu ngẫu nhiên
+function getRandomColor() {
+  const letters = "0123456789ABCDEF";
+  let color = "#";
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return parseInt(color.replace("#", "0x"), 16);
+}
+
+fontLoader.load(
+  "./assets/font.json",
+  (font) => {
+    ringTexts.forEach((text, index) => {
+      const textGeometry = new TextGeometry(text, {
+        font: font,
+        size: 0.5,
+        height: 0.1,
+      });
+      textGeometry.center();
+      const textMaterial = new THREE.MeshStandardMaterial({ color: getRandomColor() });
+      const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+      const angle = (index / ringTexts.length) * Math.PI * 2;
+      const radius = 4;
+      textMesh.position.x = Math.cos(angle) * radius;
+      textMesh.position.z = Math.sin(angle) * radius;
+      textMesh.lookAt(0, 0, 0);
+      textGroup.add(textMesh);
+    });
+    scene.add(textGroup);
+
+    const newTexts = ["Forever Yours", "Eternal Love"];
+    newTexts.forEach((text, index) => {
+      const textGeometry = new TextGeometry(text, {
+        font: font,
+        size: 0.5,
+        height: 0.1,
+      });
+      textGeometry.center();
+      const textMaterial = new THREE.MeshStandardMaterial({ color: getRandomColor() });
+      const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+      const angle = (index / newTexts.length) * Math.PI * 2 + Math.PI / 2;
+      const radius = 5;
+      textMesh.position.x = Math.cos(angle) * radius;
+      textMesh.position.z = Math.sin(angle) * radius;
+      textMesh.lookAt(0, 0, 0);
+      additionalTextGroup.add(textMesh);
+    });
+    planet.add(additionalTextGroup);
+  },
+  undefined,
+  (error) => {
+    console.error("Failed to load font:", error);
+    const defaultTextMaterial = new THREE.MeshBasicMaterial({ color: getRandomColor() });
+    ringTexts.forEach((text, index) => {
+      const textGeometry = new TextGeometry(text, {
+        size: 0.5,
+        height: 0.1,
+      });
+      textGeometry.center();
+      const textMesh = new THREE.Mesh(textGeometry, defaultTextMaterial);
+      const angle = (index / ringTexts.length) * Math.PI * 2;
+      const radius = 4;
+      textMesh.position.x = Math.cos(angle) * radius;
+      textMesh.position.z = Math.sin(angle) * radius;
+      textMesh.lookAt(0, 0, 0);
+      textGroup.add(textMesh);
+    });
+    scene.add(textGroup);
+
+    const newTexts = ["Forever Yours", "Eternal Love"];
+    newTexts.forEach((text, index) => {
+      const textGeometry = new TextGeometry(text, {
+        size: 0.5,
+        height: 0.1,
+      });
+      textGeometry.center();
+      const textMesh = new THREE.Mesh(textGeometry, defaultTextMaterial);
+      const angle = (index / newTexts.length) * Math.PI * 2 + Math.PI / 2;
+      const radius = 5;
+      textMesh.position.x = Math.cos(angle) * radius;
+      textMesh.position.z = Math.sin(angle) * radius;
+      textMesh.lookAt(0, 0, 0);
+      additionalTextGroup.add(textMesh);
+    });
+    planet.add(additionalTextGroup);
+  }
+);
+
+// ======================================================
+// CẬP NHẬT: CODE CHO CÁC ẢNH TRÔI NỔI VỚI KHUNG VÀ VIỀN
+// ======================================================
+
+const floatingImageFrames = [];
+const floatingImages = window.dataLove.floatingImages || [];
+const DUPLICATES_PER_IMAGE = 30;
+const IMAGE_SIZE = 1.5;
+const BORDER_THICKNESS = 0.05;
+const RADIUS_RANGE = 12;
+
+// Hàm tạo texture bo tròn góc từ một ảnh gốc
+function createRoundedTexture(originalTexture, radius = 0.2) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  const image = originalTexture.image;
+  canvas.width = image.width;
+  canvas.height = image.height;
+
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+  const cornerRadius = radius * Math.min(canvas.width, canvas.height);
   ctx.save();
-  ctx.translate(giftBox.x, giftBox.y);
-
-  // Áp dụng hiệu ứng phập phồng
-  const scale = 1 + Math.sin(giftBox.pulse) * 0.05;
-  ctx.scale(scale, scale);
-
-  // 1. Hiệu ứng đổ bóng lấp lánh
-  const lightness = 70 + Math.sin(giftBox.shimmer) * 15;
-  ctx.shadowColor = `hsl(50, 100%, ${lightness}%)`; // Màu vàng lấp lánh
-  ctx.shadowBlur = 30;
-
-  // 2. Vẽ thân hộp
-  ctx.fillStyle = "#e74c3c"; // Màu đỏ đậm hơn
-  ctx.fillRect(-giftBox.size / 2, 0, giftBox.size, giftBox.size * 0.8);
-
-  // 3. Vẽ nắp hộp
-  ctx.fillStyle = "#c0392b"; // Màu đỏ sẫm
-  ctx.fillRect(
-    -giftBox.size * 0.55,
-    -giftBox.size * 0.1,
-    giftBox.size * 1.1,
-    giftBox.size * 0.2
-  );
-
-  // 4. Vẽ dây ruy băng
-  ctx.fillStyle = "#f1c40f"; // Màu vàng gold
-  // Dọc
-  ctx.fillRect(
-    -giftBox.size * 0.1,
-    -giftBox.size * 0.1,
-    giftBox.size * 0.2,
-    giftBox.size * 0.9
-  );
-  // Ngang trên nắp
-  ctx.fillRect(
-    -giftBox.size * 0.55,
-    -giftBox.size * 0.02,
-    giftBox.size * 1.1,
-    giftBox.size * 0.1
-  );
-
-  // 5. Vẽ Nơ
-  const bowSize = giftBox.size * 0.3;
+  ctx.globalCompositeOperation = "destination-in";
   ctx.beginPath();
-  // Cánh trái
-  ctx.moveTo(0, -giftBox.size * 0.1);
-  ctx.bezierCurveTo(
-    -bowSize,
-    -giftBox.size * 0.1,
-    -bowSize,
-    -giftBox.size * 0.4,
-    0,
-    -giftBox.size * 0.4
-  );
-  ctx.bezierCurveTo(
-    -bowSize * 0.1,
-    -giftBox.size * 0.4,
-    -bowSize * 0.1,
-    -giftBox.size * 0.1,
-    0,
-    -giftBox.size * 0.1
-  );
-  // Cánh phải
-  ctx.moveTo(0, -giftBox.size * 0.1);
-  ctx.bezierCurveTo(
-    bowSize,
-    -giftBox.size * 0.1,
-    bowSize,
-    -giftBox.size * 0.4,
-    0,
-    -giftBox.size * 0.4
-  );
-  ctx.bezierCurveTo(
-    bowSize * 0.1,
-    -giftBox.size * 0.4,
-    bowSize * 0.1,
-    -giftBox.size * 0.1,
-    0,
-    -giftBox.size * 0.1
-  );
+  ctx.moveTo(cornerRadius, 0);
+  ctx.lineTo(canvas.width - cornerRadius, 0);
+  ctx.arc(canvas.width - cornerRadius, cornerRadius, cornerRadius, -Math.PI / 2, 0, false);
+  ctx.lineTo(canvas.width, canvas.height - cornerRadius);
+  ctx.arc(canvas.width - cornerRadius, canvas.height - cornerRadius, cornerRadius, 0, Math.PI / 2, false);
+  ctx.lineTo(cornerRadius, canvas.height);
+  ctx.arc(cornerRadius, canvas.height - cornerRadius, cornerRadius, Math.PI / 2, Math.PI, false);
+  ctx.lineTo(0, cornerRadius);
+  ctx.arc(cornerRadius, cornerRadius, cornerRadius, Math.PI, 3 * Math.PI / 2, false);
+  ctx.closePath();
   ctx.fill();
-  // Nút thắt ở giữa
-  ctx.beginPath();
-  ctx.arc(0, -giftBox.size * 0.25, bowSize * 0.2, 0, Tau);
-  ctx.fill();
-
   ctx.restore();
+
+  const roundedTexture = new THREE.CanvasTexture(canvas);
+  roundedTexture.minFilter = THREE.LinearFilter;
+  roundedTexture.magFilter = THREE.LinearFilter;
+  return roundedTexture;
 }
 
-function drawGiftText() {
-  if (giftText.alpha > 0) {
-    ctx.save();
-    ctx.globalAlpha = giftText.alpha;
+// Tạo texture bo tròn cho khung viền trắng
+function createRoundedFrameTexture(width, height, cornerRadius, borderThickness) {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Hiệu ứng phập phồng cho chữ
-    const fontSize = 30 + Math.sin(giftBox.pulse) * 3;
-    ctx.font = `bold ${fontSize}px 'Arial', sans-serif`;
+  const frameCornerRadius = cornerRadius;
+  ctx.save();
+  ctx.globalCompositeOperation = "destination-out";
+  ctx.beginPath();
+  ctx.moveTo(frameCornerRadius, 0);
+  ctx.lineTo(canvas.width - frameCornerRadius, 0);
+  ctx.arc(canvas.width - frameCornerRadius, frameCornerRadius, frameCornerRadius, -Math.PI / 2, 0, false);
+  ctx.lineTo(canvas.width, canvas.height - frameCornerRadius);
+  ctx.arc(canvas.width - frameCornerRadius, canvas.height - frameCornerRadius, frameCornerRadius, 0, Math.PI / 2, false);
+  ctx.lineTo(frameCornerRadius, canvas.height);
+  ctx.arc(frameCornerRadius, canvas.height - frameCornerRadius, frameCornerRadius, Math.PI / 2, Math.PI, false);
+  ctx.lineTo(0, frameCornerRadius);
+  ctx.arc(frameCornerRadius, frameCornerRadius, frameCornerRadius, Math.PI, 3 * Math.PI / 2, false);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
 
-    ctx.fillStyle = "white";
-    ctx.textAlign = "center";
-    ctx.shadowColor = "rgba(0,0,0,0.7)";
-    ctx.shadowBlur = 10;
-
-    ctx.fillText(giftText.message, hw, h - 80); // Vị trí chữ
-    ctx.restore();
-  }
+  const frameTexture = new THREE.CanvasTexture(canvas);
+  frameTexture.minFilter = THREE.LinearFilter;
+  frameTexture.magFilter = THREE.LinearFilter;
+  return frameTexture;
 }
 
-// Thêm sự kiện click
-c.addEventListener("click", function (e) {
-  if (!giftBox.landed) return;
+// Tạo nhiều bản sao ngẫu nhiên cho mỗi ảnh
+floatingImages.forEach((imagePath) => {
+  textureLoader.load(
+    imagePath,
+    (loadedTexture) => {
+      const roundedTexture = createRoundedTexture(loadedTexture);
 
-  const rect = c.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
+      for (let duplicate = 0; duplicate < DUPLICATES_PER_IMAGE; duplicate++) {
+        const aspectRatio = loadedTexture.image.width / loadedTexture.image.height;
+        const width = IMAGE_SIZE * aspectRatio;
+        const height = IMAGE_SIZE;
+        const cornerRadius = 0.2 * Math.min(width, height);
 
-  // Tính toán vùng bao của hộp quà (có tính đến hiệu ứng scale)
-  const currentScale = 1 + Math.sin(giftBox.pulse) * 0.05;
-  const boxWidth = giftBox.size * 1.1 * currentScale; // 1.1 là tính cả nắp hộp
-  const boxHeight = giftBox.size * currentScale; // Tính cả nơ
+        const imageGeometry = new THREE.PlaneGeometry(width, height);
+        const imageMaterial = new THREE.MeshBasicMaterial({
+          map: roundedTexture,
+          transparent: true,
+          side: THREE.DoubleSide,
+        });
+        const imageMesh = new THREE.Mesh(imageGeometry, imageMaterial);
 
-  const boxLeft = giftBox.x - boxWidth / 2;
-  const boxRight = giftBox.x + boxWidth / 2;
-  const boxTop = giftBox.y - boxHeight * 0.4; // Tính từ đỉnh nơ
-  const boxBottom = giftBox.y + boxHeight * 0.8;
+        const frameWidth = width + BORDER_THICKNESS * 2;
+        const frameHeight = height + BORDER_THICKNESS * 2;
+        const frameCornerRadius = cornerRadius + BORDER_THICKNESS;
+        const frameTexture = createRoundedFrameTexture(frameWidth, frameHeight, frameCornerRadius, BORDER_THICKNESS);
+        const frameGeometry = new THREE.PlaneGeometry(frameWidth, frameHeight);
+        const frameMaterial = new THREE.MeshBasicMaterial({
+          map: frameTexture,
+          transparent: true,
+          side: THREE.DoubleSide,
+        });
+        const frameMesh = new THREE.Mesh(frameGeometry, frameMaterial);
 
-  if (
-    mouseX > boxLeft &&
-    mouseX < boxRight &&
-    mouseY > boxTop &&
-    mouseY < boxBottom
-  ) {
-    // Thay 'gift.html' bằng trang bạn muốn chuyển đến
-    window.location.href = "./lastStep.html";
-  }
+        const frameGroup = new THREE.Group();
+        frameGroup.add(frameMesh);
+        frameGroup.add(imageMesh);
+        imageMesh.position.x = 0;
+        imageMesh.position.y = 0;
+        imageMesh.position.z = 0.001;
+
+        const angle = Math.random() * Math.PI * 2;
+        const currentRadius = 5 + Math.random() * RADIUS_RANGE * 1.5;
+        frameGroup.position.x = Math.cos(angle) * currentRadius;
+        frameGroup.position.z = Math.sin(angle) * currentRadius;
+        frameGroup.position.y = (Math.random() - 0.5) * RADIUS_RANGE * 1.2;
+
+        floatingImageFrames.push(frameGroup);
+        planet.add(frameGroup);
+      }
+    },
+    undefined,
+    (err) => console.error(`Failed to load floating image: ${imagePath}`, err)
+  );
 });
 
 // ======================================================
-// END: PHẦN MÃ MỚI CHO HỘP QUÀ
+// KẾT THÚC: CODE CHO CÁC ẢNH TRÔI NỔI
 // ======================================================
 
-function Letter(char, x, y) {
-  this.char = char;
-  this.x = x;
-  this.y = y;
-  this.dx = -ctx.measureText(char).width / 2;
-  this.dy = +opts.charSize / 2;
-  this.fireworkDy = this.y - hh;
-  var hue = (x / calc.totalWidth) * 360;
-  this.color = "hsl(hue,80%,50%)".replace("hue", hue);
-  this.lightAlphaColor = "hsla(hue,80%,light%,alp)".replace("hue", hue);
-  this.lightColor = "hsl(hue,80%,light%)".replace("hue", hue);
-  this.alphaColor = "hsla(hue,80%,50%,alp)".replace("hue", hue);
-  this.reset();
+// 3. VỊ TRÍ CAMERA
+camera.position.z = 30;
+
+// 4. VÒNG LẶP ANIMATION
+function animate() {
+  requestAnimationFrame(animate);
+
+  planet.rotation.y += 0.005;
+  stars.rotation.y += 0.001;
+  textGroup.rotation.y += 0.02;
+
+  textGroup.children.forEach((textMesh) => {
+    textMesh.lookAt(camera.position);
+  });
+
+  floatingImageFrames.forEach((frameGroup) => {
+    frameGroup.lookAt(camera.position);
+    frameGroup.rotation.y += 0.002 * Math.sin(Date.now() * 0.001 + frameGroup.position.x);
+    frameGroup.rotation.x += 0.001 * Math.cos(Date.now() * 0.0008 + frameGroup.position.y);
+  });
+
+  controls.update();
+  renderer.render(scene, camera);
 }
-Letter.prototype.reset = function () {
-  this.phase = "firework";
-  this.tick = 0;
-  this.spawned = false;
-  this.spawningTime = (opts.fireworkSpawnTime * Math.random()) | 0;
-  this.reachTime =
-    (opts.fireworkBaseReachTime + opts.fireworkAddedReachTime * Math.random()) |
-    0;
-  this.lineWidth =
-    opts.fireworkBaseLineWidth + opts.fireworkAddedLineWidth * Math.random();
-  this.prevPoints = [[0, hh, 0]];
-};
-Letter.prototype.step = function () {
-  if (this.phase === "firework") {
-    if (!this.spawned) {
-      ++this.tick;
-      if (this.tick >= this.spawningTime) {
-        this.tick = 0;
-        this.spawned = true;
-      }
-    } else {
-      ++this.tick;
-      var linearProportion = this.tick / this.reachTime,
-        armonicProportion = Math.sin(linearProportion * TauQuarter),
-        x = linearProportion * this.x,
-        y = hh + armonicProportion * this.fireworkDy;
-      if (this.prevPoints.length > opts.fireworkPrevPoints)
-        this.prevPoints.shift();
-      this.prevPoints.push([x, y, linearProportion * this.lineWidth]);
-      var lineWidthProportion = 1 / (this.prevPoints.length - 1);
-      for (var i = 1; i < this.prevPoints.length; ++i) {
-        var point = this.prevPoints[i],
-          point2 = this.prevPoints[i - 1];
-        ctx.strokeStyle = this.alphaColor.replace(
-          "alp",
-          i / this.prevPoints.length
-        );
-        ctx.lineWidth = point[2] * lineWidthProportion * i;
-        ctx.beginPath();
-        ctx.moveTo(point[0], point[1]);
-        ctx.lineTo(point2[0], point2[1]);
-        ctx.stroke();
-      }
-      if (this.tick >= this.reachTime) {
-        this.phase = "contemplate";
-        this.circleFinalSize =
-          opts.fireworkCircleBaseSize +
-          opts.fireworkCircleAddedSize * Math.random();
-        this.circleCompleteTime =
-          (opts.fireworkCircleBaseTime +
-            opts.fireworkCircleAddedTime * Math.random()) |
-          0;
-        this.circleCreating = true;
-        this.circleFading = false;
-        this.circleFadeTime =
-          (opts.fireworkCircleFadeBaseTime +
-            opts.fireworkCircleFadeAddedTime * Math.random()) |
-          0;
-        this.tick = 0;
-        this.tick2 = 0;
-        this.shards = [];
-        var shardCount =
-            (opts.fireworkBaseShards +
-              opts.fireworkAddedShards * Math.random()) |
-            0,
-          angle = Tau / shardCount,
-          cos = Math.cos(angle),
-          sin = Math.sin(angle),
-          x = 1,
-          y = 0;
-        for (var i = 0; i < shardCount; ++i) {
-          var x1 = x;
-          x = x * cos - y * sin;
-          y = y * cos + x1 * sin;
-          this.shards.push(new Shard(this.x, this.y, x, y, this.alphaColor));
-        }
-      }
-    }
-  } else if (this.phase === "contemplate") {
-    ++this.tick;
-    if (this.circleCreating) {
-      ++this.tick2;
-      var proportion = this.tick2 / this.circleCompleteTime,
-        armonic = -Math.cos(proportion * Math.PI) / 2 + 0.5;
-      ctx.beginPath();
-      ctx.fillStyle = this.lightAlphaColor
-        .replace("light", 50 + 50 * proportion)
-        .replace("alp", proportion);
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, armonic * this.circleFinalSize, 0, Tau);
-      ctx.fill();
-      if (this.tick2 > this.circleCompleteTime) {
-        this.tick2 = 0;
-        this.circleCreating = false;
-        this.circleFading = true;
-      }
-    } else if (this.circleFading) {
-      ctx.fillStyle = this.lightColor.replace("light", 70);
-      ctx.fillText(this.char, this.x + this.dx, this.y + this.dy);
-      ++this.tick2;
-      var proportion = this.tick2 / this.circleFadeTime,
-        armonic = -Math.cos(proportion * Math.PI) / 2 + 0.5;
-      ctx.beginPath();
-      ctx.fillStyle = this.lightAlphaColor
-        .replace("light", 100)
-        .replace("alp", 1 - armonic);
-      ctx.arc(this.x, this.y, this.circleFinalSize, 0, Tau);
-      ctx.fill();
-      if (this.tick2 >= this.circleFadeTime) this.circleFading = false;
-    } else {
-      ctx.fillStyle = this.lightColor.replace("light", 70);
-      ctx.fillText(this.char, this.x + this.dx, this.y + this.dy);
-    }
-    for (var i = 0; i < this.shards.length; ++i) {
-      this.shards[i].step();
-      if (!this.shards[i].alive) {
-        this.shards.splice(i, 1);
-        --i;
-      }
-    }
-    if (this.tick > opts.letterContemplatingWaitTime) {
-      this.phase = "balloon";
-      this.tick = 0;
-      this.spawning = true;
-      this.spawnTime = (opts.balloonSpawnTime * Math.random()) | 0;
-      this.inflating = false;
-      this.inflateTime =
-        (opts.balloonBaseInflateTime +
-          opts.balloonAddedInflateTime * Math.random()) |
-        0;
-      this.size =
-        (opts.balloonBaseSize + opts.balloonAddedSize * Math.random()) | 0;
-      var rad =
-          opts.balloonBaseRadian + opts.balloonAddedRadian * Math.random(),
-        vel = opts.balloonBaseVel + opts.balloonAddedVel * Math.random();
-      this.vx = Math.cos(rad) * vel;
-      this.vy = Math.sin(rad) * vel;
-    }
-  } else if (this.phase === "balloon") {
-    ctx.strokeStyle = this.lightColor.replace("light", 80);
-    if (this.spawning) {
-      ++this.tick;
-      ctx.fillStyle = this.lightColor.replace("light", 70);
-      ctx.fillText(this.char, this.x + this.dx, this.y + this.dy);
-      if (this.tick >= this.spawnTime) {
-        this.tick = 0;
-        this.spawning = false;
-        this.inflating = true;
-      }
-    } else if (this.inflating) {
-      ++this.tick;
-      var proportion = this.tick / this.inflateTime,
-        x = (this.cx = this.x),
-        y = (this.cy = this.y - this.size * proportion);
-      ctx.fillStyle = this.alphaColor.replace("alp", proportion);
-      ctx.beginPath();
-      generateBalloonPath(x, y, this.size * proportion);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x, this.y);
-      ctx.stroke();
-      ctx.fillStyle = this.lightColor.replace("light", 70);
-      ctx.fillText(this.char, this.x + this.dx, this.y + this.dy);
-      if (this.tick >= this.inflateTime) {
-        this.tick = 0;
-        this.inflating = false;
-      }
-    } else {
-      this.cx += this.vx;
-      this.cy += this.vy += opts.upFlow;
-      ctx.fillStyle = this.color;
-      ctx.beginPath();
-      generateBalloonPath(this.cx, this.cy, this.size);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(this.cx, this.cy);
-      ctx.lineTo(this.cx, this.cy + this.size);
-      ctx.stroke();
-      ctx.fillStyle = this.lightColor.replace("light", 70);
-      ctx.fillText(this.char, this.cx + this.dx, this.cy + this.dy + this.size);
-      if (this.cy + this.size < -hh || this.cx < -hw || this.cy > hw)
-        this.phase = "done";
-    }
-  }
-};
-function Shard(x, y, vx, vy, color) {
-  var vel =
-    opts.fireworkShardBaseVel + opts.fireworkShardAddedVel * Math.random();
-  this.vx = vx * vel;
-  this.vy = vy * vel;
-  this.x = x;
-  this.y = y;
-  this.prevPoints = [[x, y]];
-  this.color = color;
-  this.alive = true;
-  this.size =
-    opts.fireworkShardBaseSize + opts.fireworkShardAddedSize * Math.random();
-}
-Shard.prototype.step = function () {
-  this.x += this.vx;
-  this.y += this.vy += opts.gravity;
-  if (this.prevPoints.length > opts.fireworkShardPrevPoints)
-    this.prevPoints.shift();
-  this.prevPoints.push([this.x, this.y]);
-  var lineWidthProportion = this.size / this.prevPoints.length;
-  for (var k = 0; k < this.prevPoints.length - 1; ++k) {
-    var point = this.prevPoints[k],
-      point2 = this.prevPoints[k + 1];
-    ctx.strokeStyle = this.color.replace("alp", k / this.prevPoints.length);
-    ctx.lineWidth = k * lineWidthProportion;
-    ctx.beginPath();
-    ctx.moveTo(point[0], point[1]);
-    ctx.lineTo(point2[0], point2[1]);
-    ctx.stroke();
-  }
-  if (this.prevPoints[0][1] > hh) this.alive = false;
-};
-function generateBalloonPath(x, y, size) {
-  ctx.moveTo(x, y);
-  ctx.bezierCurveTo(
-    x - size / 2,
-    y - size / 2,
-    x - size / 4,
-    y - size,
-    x,
-    y - size
-  );
-  ctx.bezierCurveTo(x + size / 4, y - size, x + size / 2, y - size / 2, x, y);
-}
+animate();
 
-function anim() {
-  window.requestAnimationFrame(anim);
-  ctx.fillStyle = "#111";
-  ctx.fillRect(0, 0, w, h);
-  ctx.translate(hw, hh);
-  var done = true;
-  for (var l = 0; l < letters.length; ++l) {
-    letters[l].step();
-    if (letters[l].phase !== "done") done = false;
-  }
-  ctx.translate(-hw, -hh);
-  if (done) for (var l = 0; l < letters.length; ++l) letters[l].reset();
-
-  // THÊM LỆNH GỌI HÀM CẬP NHẬT VÀ VẼ HỘP QUÀ
-  updateAndDrawGift();
-}
-
-for (let i = 0; i < opts.strings.length; ++i) {
-  for (var j = 0; j < opts.strings[i].length; ++j) {
-    letters.push(
-      new Letter(
-        opts.strings[i][j],
-        j * opts.charSpacing +
-          opts.charSpacing / 2 -
-          (opts.strings[i].length * opts.charSize) / 2,
-        i * opts.lineHeight +
-          opts.lineHeight / 2 -
-          (opts.strings.length * opts.lineHeight) / 2
-      )
-    );
-  }
-}
-
-anim();
-
-window.addEventListener("resize", function () {
-  w = c.width = window.innerWidth;
-  h = c.height = window.innerHeight;
-  hw = w / 2;
-  hh = h / 2;
-  ctx.font = opts.charSize + "px Verdana";
-
-  // Cập nhật lại vị trí cuối của hộp quà khi resize
-  giftBox.x = hw;
-  giftBox.targetY = h - 180;
+// 5. XỬ LÝ KHI THAY ĐỔI KÍCH THƯỚC CỬA SỔ
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
 });
